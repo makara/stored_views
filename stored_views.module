@@ -168,7 +168,7 @@ function stored_views_save($save) {
 
 /**
  * Load a stored view.
- * 
+ *
  * @param $load
  *   array in the format
  *   array(
@@ -209,7 +209,7 @@ function stored_views_id_load($id) {
 
 /**
  * Remove a stored view.
- * 
+ *
  * @param $delete
  *   array in the format
  *   array(
@@ -247,10 +247,52 @@ function _stored_views_get_page_view() {
         if ($filter->options['exposed']) {
           $current['filters'][$filter->options['expose']['identifier']] = $filter->value;
         }
+        // Searchlight facets.
+        elseif (($filter instanceof searchlight_handler_filter_facets) && !empty($filter->query->searchlight)) {
+          _stored_views_page_view_active_facets($current, $filter);
+        }
       }
     }
   }
   return $current;
+}
+
+/**
+ * Set Searchlight facets for a page view record.
+ */
+function _stored_views_page_view_active_facets(&$current, $filter) {
+  // Retrieve the active environment.
+  $environment = searchlight_environment_active(NULL, $filter->view->name, $filter->view->current_display);
+
+  // Only add these when there's active facets.
+  if (!empty($environment) && !empty($environment->active_values)) {
+    // Save facets in filters.
+    // TODO: not precise enough?
+    $key = variable_get('searchlight_facet_key', 'sl');
+    $packed = isset($_GET[$key]) ? $_GET[$key] : NULL;
+    $current['filters'][$key] = $packed;
+
+    // A better title.
+    // @see SearchlightEnvironment::render().
+    $active_factes = array();
+    $delta = 'active';
+    foreach ($environment->plugins as $name => $plugin) {
+      if ($render = $plugin->render(drupal_clone($environment->query), $delta)) {
+        foreach ($render as $item) {
+          $active_factes[] = t('@label = @value', array(
+            '@label' => $plugin->label($delta),
+            '@value' => $item['title'],
+          ));
+        }
+      }
+    }
+    if (!empty($active_factes)) {
+      $current['title'] = t('@title [@facets]', array(
+        '@title' => $current['title'],
+        '@facets' => implode(', ', $active_factes),
+      ));
+    }
+  }
 }
 
 /**
