@@ -264,15 +264,8 @@ function _stored_views_page_view_active_facets(&$current, $filter) {
   // Retrieve the active environment.
   $environment = searchlight_environment_active(NULL, $filter->view->name, $filter->view->current_display);
 
-  // Only add these when there's active facets.
-  if (!empty($environment) && !empty($environment->active_values)) {
-    // Save facets in filters.
-    // TODO: not precise enough?
-    $key = variable_get('searchlight_facet_key', 'sl');
-    $packed = isset($_GET[$key]) ? $_GET[$key] : NULL;
-    $current['filters'][$key] = $packed;
-
-    // A better title.
+  if (!empty($environment)) {
+    // Get active facets.
     // @see SearchlightEnvironment::render().
     $active_factes = array();
     $delta = 'active';
@@ -286,7 +279,15 @@ function _stored_views_page_view_active_facets(&$current, $filter) {
         }
       }
     }
+
     if (!empty($active_factes)) {
+      // Save facets in filters.
+      // TODO: not precise enough?
+      $key = variable_get('searchlight_facet_key', 'sl');
+      $packed = isset($_GET[$key]) ? $_GET[$key] : NULL;
+      $current['filters'][$key] = $packed;
+
+      // A better title.
       $current['title'] = t('@title [@facets]', array(
         '@title' => $current['title'],
         '@facets' => implode(', ', $active_factes),
